@@ -1,38 +1,38 @@
 # TossIt 2.0 - Waste Analytics Software
-TossIt 2.0 is a full rebuild of the original [TossIt](https://github.com/jaineelmodi11/Tossit) project as a modern web application. It lets you take a photo of any waste item and instantly know whether it's recyclable, organic, or landfill — with a personal dashboard that tracks your habits over time.
+TossIt 2.0 is a full rebuild of the original [TossIt](https://github.com/jaineelmodi11/Tossit) project. Point your camera at whatever you're about to throw away, and it tells you: recycling bin, green bin, or garbage. Every scan gets saved to your personal dashboard so you can actually see your habits over time.
 
-- **Smart Classification:** Browser camera or file upload → ML model → bin advice in seconds.
-- **Personal Dashboard:** Recycling rate, category breakdown, and 7-day trend charts updated in real time.
-- **Scan History:** Every item you've classified, grouped by day with exact timestamps.
-- **Accounts & Sync:** Firebase Auth keeps your data across devices via Firestore.
+- **Classification:** Browser camera or file upload feeds into the ML model and you get a bin recommendation in seconds.
+- **Dashboard:** Recycling rate, category breakdown, 7-day trend charts, all live-updating.
+- **Scan History:** A log of every item you've classified, grouped by day with the exact time of each scan.
+- **Accounts:** Firebase Auth ties your data to your account so it follows you across devices.
 
 ## Why 2.0?
 
-The original TossIt was built on React Native + Expo. It worked great conceptually but ran into toolchain issues — Expo's build system is complex and fragile across different machines and environments.
+The original TossIt was React Native + Expo. The idea was solid but Expo's build system kept breaking on different machines. Native toolchains are a nightmare to maintain, and spending hours debugging a Metro bundler error instead of building features gets old fast.
 
-TossIt 2.0 is a complete rewrite as a web app that runs with a single `npm run dev`. Same Firebase project, same ML model, same idea — just actually works now.
+2.0 is a web app. It runs with `npm run dev`. No Xcode, no Android Studio, no simulator setup. Same Firebase project, same ML model, all the original features plus a scan history feed.
 
-## Why "TossIt"?
+## The Problem
 
-**Problem:** A lot of industrial and commercial kitchens have a waste management issue — especially small businesses. Personally, the cafe my parents own faces this constantly. Some weeks my dad makes several Costco trips; other weeks none. Better waste data would help optimize purchasing and reduce loss.
+My parents own a small cafe. Some weeks my dad drives to Costco three times; other weeks, not at all. A lot of that comes down to not knowing what got wasted the week before. Without data you're just guessing, and guessing at scale is expensive.
 
-At the household level, waste analytics usually only happens at the industrial scale. If individuals had real data on their own waste, they could be incentivized (say, by municipalities) to reduce it. TossIt is the data-collection layer that makes that possible.
+Waste analytics as a concept exists, but it lives at the industrial level. City trucks get weighed, municipal stats get published, and the individual household sees none of it. The gap is at the source: nobody's tracking what actually goes in the bin. TossIt is meant to fill that gap. Give people their own waste data and you've got something to work with, whether that's a small business trying to cut food costs or a city trying to build a recycling incentive program.
 
-**Solution:** A cheap sensor (or your phone camera) captures an image of the item you're throwing away. The image is classified by an ML model, the result is recorded, and the data surfaces on your personal dashboard.
+There are obvious problems with this approach too. What stops someone from not scanning things? Honestly, no clue yet. That's a logistics problem for later.
 
 ## ⭐ Key Features
 
 **Waste Classification**
-Take a photo or upload from your library — the ML model classifies the item as Recycling, Organic, or Garbage and tells you which bin it belongs in.
+Take a photo or upload one. The model classifies it as Recycling, Organic, or Garbage. You get the bin color, an emoji, and a one-line disposal tip.
 
 **Real-Time Dashboard**
-Recycling rate hero card, per-category counts, all-time pie chart, and last 7 days line chart — all live-updating via Firestore `onSnapshot`.
+The recycling rate card sits front and center. Below it: per-category counts, an all-time pie chart, and a line graph of the past 7 days. Firestore's `onSnapshot` keeps everything current without a page refresh.
 
 **Scan History Feed**
-Every individual scan stored with a server timestamp, displayed as a grouped feed (Today / Yesterday / date) with emoji, label, and exact time.
+Each scan writes an individual timestamped record to Firestore. The history page groups them by Today, Yesterday, and earlier dates. If you scanned something at 11:47pm last Tuesday, it's there.
 
 **Firebase Auth**
-Email/password sign-up and sign-in. Your waste data is private to your account.
+Email and password. Nothing fancy, but your data is yours and stays private.
 
 ## 🧰 Tech Stack
 
@@ -59,7 +59,7 @@ Email/password sign-up and sign-in. Your waste data is private to your account.
 | Concern | Tech |
 |---|---|
 | API server | Python FastAPI + Uvicorn |
-| Inference | ONNX Runtime (converted from Keras .h5) |
+| Inference | ONNX Runtime (converted from Keras .h5 via tf2onnx) |
 | Image processing | Pillow + NumPy |
 
 ## 🏗 Architecture & Flow
@@ -68,35 +68,36 @@ Email/password sign-up and sign-in. Your waste data is private to your account.
 ┌─────────────────────────────────────┐
 │           Browser (Next.js)         │
 │  ┌─────────┐    ┌────────────────┐  │
-│  │  Pages  │───▶│  Zustand Store │  │
+│  │  Pages  │───>│  Zustand Store │  │
 │  └─────────┘    └────────────────┘  │
-│       │                 ▲           │
+│       │                 ^           │
 │  fetch/FileReader        │           │
 │       │          Firestore onSnapshot│
-│       ▼                 │           │
+│       v                 │           │
 │  ┌──────────────────────────────┐   │
 │  │  lib/api/classify.ts         │   │
 │  │  lib/firebase/firestore.ts   │   │
 │  └──────────────┬───────────────┘   │
 └─────────────────┼───────────────────┘
                   │ POST /predict (base64 image)
-                  ▼
+                  v
      ┌────────────────────────┐
      │  FastAPI Server (:8000)│
      │  ONNX Runtime          │
-     │  model.onnx (224×224)  │
+     │  model.onnx (224x224)  │
      └────────────────────────┘
                   │
            Firestore (Firebase)
-    users/{uid}/totals + linegraph + history
+    users/{uid}: totals + linegraph + history
 ```
 
-**Scan flow:**
-1. User selects image (camera or file picker)
-2. `FileReader` converts to base64 → `POST /predict`
-3. FastAPI runs ONNX inference → returns `{ class: "Recycling" | "Organic" | "Garbage" }`
-4. `recordClassification` writes to Firestore totals, linegraph, and history subcollection
-5. Firestore `onSnapshot` listeners update the dashboard in real time
+What actually happens when you scan something:
+
+1. You pick an image from your library or capture one with the camera
+2. `FileReader` converts it to base64 and it gets sent to `POST /predict`
+3. FastAPI runs the image through the ONNX model at 224x224 and returns `{ class: "Recycling" | "Organic" | "Garbage" }`
+4. `recordClassification` writes to three places in Firestore: the running totals, the daily linegraph, and the history subcollection
+5. The `onSnapshot` listeners on the dashboard pick up the changes and re-render without any manual refresh
 
 ## 🚀 Getting Started
 
@@ -116,38 +117,38 @@ NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 
 ### 2. ML model
 
-Place your `model.onnx` in the `server/` directory. To convert an existing `model.h5`:
+Drop `model.onnx` into the `server/` directory. If you only have the original `model.h5`, convert it:
 
 ```bash
 pip install tf2onnx onnxruntime
 python -m tf2onnx.convert --keras server/model.h5 --output server/model.onnx --opset 13
 ```
 
-Find the original model and training notebook at:
+The original training notebook and dataset:
 - Notebook: https://colab.research.google.com/drive/1lKhuDRrNifkCcQJYwR6jhOxjfU-8rV1z?usp=sharing
 - Dataset: https://www.kaggle.com/datasets/vyomkapadia/tossit
 
 ### 3. Run
 
 ```bash
-# Terminal 1 — ML backend
+# Terminal 1 - ML backend
 cd server
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 
-# Terminal 2 — Web app
+# Terminal 2 - Web app
 cd client
 npm install
 npm run dev
-# → http://localhost:3000
+# open http://localhost:3000
 ```
 
 ## 🔮 Future
 
-- Hardware sensor that captures images automatically — no phone needed
-- Recognizing multiple items in one image (people like to throw things away simultaneously 😅)
-- Carbon footprint calculator based on your personal waste history
-- Dollar value of perishable food waste — how much money are you actually losing?
-- Map of nearest recycling facilities, donation centers, and drop-off locations
-- Municipality rewards system to incentivize households to reduce waste
-- Streaks and badges to gamify good recycling habits
+- A physical sensor that sits above the bin and captures the image without you doing anything
+- Classifying multiple items in one photo (people throw several things away at once 😅)
+- Carbon footprint numbers based on your actual scan history
+- Dollar estimates on food waste, specifically perishables that expired or got left over
+- A map of nearby recycling drop-offs, donation centers, and special waste facilities
+- Some kind of municipal rewards system where good recycling habits earn points or discounts
+- Streaks, badges, anything that makes it feel less like a chore
