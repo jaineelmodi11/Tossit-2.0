@@ -1,0 +1,11 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+pillow==10.4.0
+numpy==1.26.4
+python-multipart==0.0.9
+pydantic-settings==2.3.0
+
+# ML inference — choose ONE:
+# Option A (default): ONNX Runtime — lightweight, fast, no GPU needed (~10 MB)
+#   Run: python convert_model.py  to convert model.h5 → model.onnx first
+onnxruntime>=1.19.2  # converted from model.h5 via tf2onnx; TF no longer needed at runtime

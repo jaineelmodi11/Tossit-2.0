@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment variables — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# ML model weights — large binary files, store separately
+server/model.h5
+server/model.onnx
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
