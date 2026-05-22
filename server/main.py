@@ -1,10 +1,10 @@
 """
-Tossit — Waste Classification API
+Tossit - Waste Classification API
 FastAPI 0.115 | Modernized from original FastAPI 0.68 version
 
 Key improvements over the original:
 - Model loads once at startup via lifespan, not at import time
-- Images processed in-memory (io.BytesIO) — no disk writes
+- Images processed in-memory (io.BytesIO) - no disk writes
 - Proper HTTP 500 with error details instead of swallowing exceptions
 - Typed Pydantic request body
 - CORS origins configurable via environment variables
@@ -35,7 +35,7 @@ classifier: WasteClassifier | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global classifier
-    logger.info("Loading waste classification model…")
+    logger.info("Loading waste classification model...")
     classifier = WasteClassifier(
         onnx_path=settings.onnx_model_path,
         tf_path=settings.tf_model_path,
@@ -79,7 +79,7 @@ async def predict(body: PredictRequest):
     try:
         # Strip "data:image/...;base64," prefix
         if "," not in body.data:
-            raise ValueError("Invalid data URI format — expected 'data:<mime>;base64,<payload>'")
+            raise ValueError("Invalid data URI format - expected 'data:<mime>;base64,<payload>'")
 
         _, b64_payload = body.data.split(",", 1)
         image_bytes = b64decode(b64_payload)

@@ -125,7 +125,7 @@ export default function ProfilePage() {
                 disabled={signingOut}
                 className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-60"
               >
-                {signingOut ? "Signing out…" : "Sign Out"}
+                {signingOut ? "Signing out..." : "Sign Out"}
               </button>
             </div>
           </div>

@@ -103,7 +103,7 @@ export default function ScanPage() {
           <div className="bg-white rounded-2xl p-5 mb-5 flex items-center gap-4 shadow-sm">
             <div className="w-5 h-5 border-2 border-[#68ac53] border-t-transparent rounded-full animate-spin flex-shrink-0" />
             <div>
-              <p className="text-[#1E232C] font-semibold">Classifying…</p>
+              <p className="text-[#1E232C] font-semibold">Classifying...</p>
               <p className="text-gray-400 text-xs mt-0.5">Sending to ML model</p>
             </div>
           </div>

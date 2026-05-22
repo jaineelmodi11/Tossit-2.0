@@ -5,7 +5,7 @@ node_modules/
 .next/
 out/
 
-# Environment variables — never commit secrets
+# Environment variables - never commit secrets
 .env
 .env.local
 .env.*.local
@@ -15,7 +15,7 @@ __pycache__/
 *.pyc
 *.pyo
 
-# ML model weights — large binary files, store separately
+# ML model weights - large binary files, store separately
 server/model.h5
 server/model.onnx
 

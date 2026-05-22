@@ -94,7 +94,7 @@ export default function SignInPage() {
             className="rounded-2xl py-5 font-bold text-white text-lg transition-colors"
             style={{ backgroundColor: loading ? "#a8d49a" : "#68ac53" }}
           >
-            {loading ? "Signing in…" : "Sign In"}
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 

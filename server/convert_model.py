@@ -21,7 +21,7 @@ def convert():
         print(f"Error: {h5_path} not found.")
         sys.exit(1)
 
-    print("Step 1: Loading model.h5 with TensorFlow…")
+    print("Step 1: Loading model.h5 with TensorFlow...")
     try:
         import tensorflow as tf
         os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
@@ -33,10 +33,10 @@ def convert():
     print(f"  Input shape:  {model.input_shape}")
     print(f"  Output shape: {model.output_shape}")
 
-    print(f"Step 2: Saving as SavedModel to {saved_model_dir}…")
+    print(f"Step 2: Saving as SavedModel to {saved_model_dir}...")
     model.save(saved_model_dir)
 
-    print(f"Step 3: Converting SavedModel → {onnx_path} with tf2onnx…")
+    print(f"Step 3: Converting SavedModel -> {onnx_path} with tf2onnx...")
     try:
         import subprocess
         result = subprocess.run(

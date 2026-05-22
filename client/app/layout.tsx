@@ -9,7 +9,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Tossit — Smart Waste Classification",
+  title: "Tossit - Smart Waste Classification",
   description: "Take a photo of any waste item and instantly know whether it's recyclable, organic, or landfill.",
 };
 

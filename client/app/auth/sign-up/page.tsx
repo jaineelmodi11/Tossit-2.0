@@ -119,7 +119,7 @@ export default function SignUpPage() {
             className="rounded-2xl py-5 font-bold text-white text-lg transition-colors"
             style={{ backgroundColor: loading ? "#a8d49a" : "#68ac53" }}
           >
-            {loading ? "Creating account…" : "Create Account"}
+            {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
 
