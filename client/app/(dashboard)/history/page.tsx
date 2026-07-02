@@ -1,52 +1,19 @@
 "use client";
 import { useHistory } from "@/hooks/useHistory";
-import type { WasteCategory } from "@/types";
+import { CATEGORY_CONFIG } from "@/lib/categories";
+import type { HistoryEntry } from "@/types";
 
-const CATEGORY_CONFIG: Record<
-  WasteCategory,
-  { emoji: string; label: string; bg: string; text: string; dot: string }
-> = {
-  Recycling: {
-    emoji: "♻️",
-    label: "Recycling",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    dot: "bg-blue-400",
-  },
-  Organic: {
-    emoji: "🌱",
-    label: "Organic / Compost",
-    bg: "bg-green-50",
-    text: "text-green-700",
-    dot: "bg-green-400",
-  },
-  Garbage: {
-    emoji: "🗑️",
-    label: "Garbage",
-    bg: "bg-gray-100",
-    text: "text-gray-700",
-    dot: "bg-gray-400",
-  },
-};
-
-function formatTimestamp(date: Date): { date: string; time: string } {
-  return {
-    date: date.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
-    time: date.toLocaleTimeString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    }),
-  };
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function groupByDate(
-  entries: { id: string; category: WasteCategory; timestamp: Date }[]
-): { label: string; items: typeof entries }[] {
-  const groups: Record<string, typeof entries> = {};
+  entries: HistoryEntry[]
+): { label: string; items: HistoryEntry[] }[] {
+  const groups: Record<string, HistoryEntry[]> = {};
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -73,7 +40,7 @@ function groupByDate(
 }
 
 export default function HistoryPage() {
-  const { entries, loading } = useHistory();
+  const { entries, loading, error } = useHistory();
 
   const groups = groupByDate(entries);
 
@@ -82,29 +49,33 @@ export default function HistoryPage() {
       <div className="max-w-2xl mx-auto px-5 py-6 pb-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-[#1E232C] text-2xl font-bold">Scan History</h1>
+          <h1 className="text-ink text-2xl font-bold">Scan History</h1>
           <p className="text-gray-400 text-sm mt-1">
             Every item you&apos;ve classified
           </p>
         </div>
 
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 rounded-2xl p-4 mb-5 border border-red-100">
+            <p className="text-red-600 text-sm font-medium">{error}</p>
+          </div>
+        )}
+
         {/* Loading */}
-        {loading && (
+        {loading && !error && (
           <div className="flex flex-col gap-3">
             {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl h-16 animate-pulse"
-              />
+              <div key={i} className="bg-white rounded-2xl h-16 animate-pulse" />
             ))}
           </div>
         )}
 
         {/* Empty state */}
-        {!loading && entries.length === 0 && (
+        {!loading && !error && entries.length === 0 && (
           <div className="bg-white rounded-3xl p-10 flex flex-col items-center text-center shadow-sm">
             <span className="text-5xl mb-4">📭</span>
-            <p className="text-[#1E232C] font-semibold text-lg">No scans yet</p>
+            <p className="text-ink font-semibold text-lg">No scans yet</p>
             <p className="text-gray-400 text-sm mt-1">
               Head to the Scan tab to classify your first item.
             </p>
@@ -124,7 +95,6 @@ export default function HistoryPage() {
                 <div className="bg-white rounded-3xl overflow-hidden shadow-sm divide-y divide-gray-50">
                   {items.map((entry) => {
                     const cfg = CATEGORY_CONFIG[entry.category];
-                    const { time } = formatTimestamp(entry.timestamp);
                     return (
                       <div
                         key={entry.id}
@@ -140,9 +110,11 @@ export default function HistoryPage() {
                         {/* Label + time */}
                         <div className="flex-1 min-w-0">
                           <p className={`font-semibold text-sm ${cfg.text}`}>
-                            {cfg.label}
+                            {cfg.longLabel}
                           </p>
-                          <p className="text-gray-400 text-xs mt-0.5">{time}</p>
+                          <p className="text-gray-400 text-xs mt-0.5">
+                            {formatTime(entry.timestamp)}
+                          </p>
                         </div>
 
                         {/* Category dot */}

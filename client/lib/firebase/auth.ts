@@ -1,6 +1,7 @@
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
   type User,
@@ -12,6 +13,9 @@ export const signIn = (email: string, password: string) =>
 
 export const signUp = (email: string, password: string) =>
   createUserWithEmailAndPassword(auth, email, password);
+
+export const resetPassword = (email: string) =>
+  sendPasswordResetEmail(auth, email);
 
 export const signOutUser = () => signOut(auth);
 

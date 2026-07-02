@@ -9,22 +9,29 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { getLast7DaysKeys, toShortLabel } from "../../lib/utils/dateHelpers";
+import {
+  getLast7Days,
+  toDateKey,
+  toLegacyDateKey,
+  toShortLabel,
+} from "../../lib/utils/dateHelpers";
 import type { WasteTotals } from "../../types";
 
 interface Props {
-  linegraph: Record<string, WasteTotals>;
+  linegraph: Record<string, Partial<WasteTotals>>;
 }
 
 export function WasteLineChart({ linegraph }: Props) {
-  const keys = getLast7DaysKeys();
-
-  const chartData = keys.map((dateKey) => ({
-    day: toShortLabel(dateKey),
-    Recycling: linegraph[dateKey]?.Recycling ?? 0,
-    Organic: linegraph[dateKey]?.Organic ?? 0,
-    Garbage: linegraph[dateKey]?.Garbage ?? 0,
-  }));
+  const chartData = getLast7Days().map((day) => {
+    // Canonical ISO key first, then the key format v2.0 wrote.
+    const entry = linegraph[toDateKey(day)] ?? linegraph[toLegacyDateKey(day)];
+    return {
+      day: toShortLabel(day),
+      Recycling: entry?.Recycling ?? 0,
+      Organic: entry?.Organic ?? 0,
+      Garbage: entry?.Garbage ?? 0,
+    };
+  });
 
   const hasData = chartData.some(
     (d) => d.Recycling > 0 || d.Organic > 0 || d.Garbage > 0
@@ -65,7 +72,7 @@ export function WasteLineChart({ linegraph }: Props) {
         <Line
           type="monotone"
           dataKey="Recycling"
-          stroke="#ADD8E6"
+          stroke="#60A5FA"
           strokeWidth={2.5}
           dot={false}
         />

@@ -49,7 +49,7 @@ Email and password. Nothing fancy, but your data is yours and stays private.
 |---|---|
 | Framework | Next.js 16 App Router |
 | Language | TypeScript |
-| Styling | Tailwind CSS + shadcn/ui |
+| Styling | Tailwind CSS v4 (design tokens in `globals.css`) |
 | Auth & DB | Firebase Auth + Firestore |
 | State | Zustand |
 | Charts | Recharts |
@@ -93,10 +93,10 @@ Email and password. Nothing fancy, but your data is yours and stays private.
 
 What actually happens when you scan something:
 
-1. You pick an image from your library or capture one with the camera
-2. `FileReader` converts it to base64 and it gets sent to `POST /predict`
-3. FastAPI runs the image through the ONNX model at 224x224 and returns `{ class: "Recycling" | "Organic" | "Garbage" }`
-4. `recordClassification` writes to three places in Firestore: the running totals, the daily linegraph, and the history subcollection
+1. You pick an image from your library or frame it in the live camera viewfinder
+2. The browser downscales it to max 512px JPEG (a multi-MB phone photo becomes ~50 KB) and sends it as base64 to `POST /predict`
+3. FastAPI runs the image through the ONNX model at 224x224 and returns `{ class: "Recycling" | "Organic" | "Garbage", confidence: 0.0-1.0 }`
+4. `recordClassification` commits one atomic batch to Firestore: the running totals (via `increment()`), the daily linegraph bucket (keyed `YYYY-MM-DD`), and a history entry
 5. The `onSnapshot` listeners on the dashboard pick up the changes and re-render without any manual refresh
 
 ## 🚀 Getting Started
@@ -113,9 +113,19 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+# Public URL of the deployed site - used for SEO (canonical links, sitemap, Open Graph)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-### 2. ML model
+### 2. Firestore security rules
+
+Deploy the rules in `firestore.rules` so each user can only read and write their own data:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+### 3. ML model
 
 Drop `model.onnx` into the `server/` directory. If you only have the original `model.h5`, convert it:
 
@@ -128,7 +138,7 @@ The original training notebook and dataset:
 - Notebook: https://colab.research.google.com/drive/1lKhuDRrNifkCcQJYwR6jhOxjfU-8rV1z?usp=sharing
 - Dataset: https://www.kaggle.com/datasets/vyomkapadia/tossit
 
-### 3. Run
+### 4. Run
 
 ```bash
 # Terminal 1 - ML backend
@@ -142,6 +152,16 @@ npm install
 npm run dev
 # open http://localhost:3000
 ```
+
+## 🌐 Going live & Google
+
+The app ships SEO-ready: a server-rendered landing page at `/`, `robots.txt` and `sitemap.xml` (generated from `app/robots.ts` / `app/sitemap.ts`), Open Graph + Twitter cards with a generated social image, and JSON-LD structured data. Private dashboard routes are excluded from crawling.
+
+To actually appear on Google:
+
+1. Deploy `client/` to a public host (Vercel is the path of least resistance for Next.js) and the FastAPI `server/` to something like Render, Railway, or Fly.io.
+2. Set the production env vars on the host: the Firebase keys, `NEXT_PUBLIC_API_URL` (your deployed API), and `NEXT_PUBLIC_SITE_URL` (your deployed domain). Add that domain to `ALLOWED_ORIGINS` in the server's `.env` and to Firebase Auth's authorized domains.
+3. In [Google Search Console](https://search.google.com/search-console), verify the domain and submit `https://your-domain/sitemap.xml`. Indexing typically starts within a few days.
 
 ## 🔮 Future
 
