@@ -67,17 +67,36 @@ class PredictResponse(BaseModel):
     confidence: float
 
 
+def _get_classifier(request: Request) -> WasteClassifier:
+    """Lazy-loads the model when the lifespan hook didn't run (e.g. some
+    serverless runtimes invoke the ASGI app without startup events)."""
+    classifier = getattr(request.app.state, "classifier", None)
+    if classifier is None:
+        logger.info("Lifespan didn't run; lazy-loading model...")
+        classifier = WasteClassifier(
+            onnx_path=settings.onnx_model_path,
+            tf_path=settings.tf_model_path,
+        )
+        request.app.state.classifier = classifier
+    return classifier
+
+
 @app.get("/health")
 async def health(request: Request):
-    classifier = getattr(request.app.state, "classifier", None)
-    return {"status": "ok", "model_loaded": classifier is not None}
+    try:
+        _get_classifier(request)
+        loaded = True
+    except RuntimeError:
+        loaded = False
+    return {"status": "ok", "model_loaded": loaded}
 
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(body: PredictRequest, request: Request):
-    classifier: WasteClassifier | None = getattr(request.app.state, "classifier", None)
-    if classifier is None:
-        raise HTTPException(status_code=503, detail="Model not loaded yet.")
+    try:
+        classifier = _get_classifier(request)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Model is not available.")
 
     # Strip "data:image/...;base64," prefix
     if "," not in body.data:

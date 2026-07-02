@@ -1,0 +1,9 @@
+# .vercelignore takes precedence over .gitignore, which excludes model.onnx -
+# the deployment must include it, so only real junk is ignored here.
+__pycache__/
+*.pyc
+.venv/
+.env
+.expo/
+model.h5
+model_saved/

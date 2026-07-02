@@ -10,6 +10,9 @@ out/
 .env.local
 .env.*.local
 
+# Vercel project links
+.vercel/
+
 # Python
 __pycache__/
 *.pyc

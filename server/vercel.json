@@ -1,0 +1,12 @@
+{
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": ["model.onnx", "config.py", "model.py"]
+      }
+    }
+  ],
+  "routes": [{ "src": "/(.*)", "dest": "main.py" }]
+}
