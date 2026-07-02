@@ -3,12 +3,7 @@ import Link from "next/link";
 
 export default function WelcomePage() {
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-between px-6 py-12"
-      style={{
-        background: "linear-gradient(135deg, #68ac53 0%, #4a8a3a 50%, #2d5c22 100%)",
-      }}
-    >
+    <div className="min-h-screen flex flex-col items-center justify-between px-6 py-12 bg-linear-[135deg] from-brand via-brand-dark to-brand-deep">
       {/* Header */}
       <div className="text-center mt-8">
         <h1 className="text-white text-5xl font-bold tracking-tight">Tossit</h1>
@@ -32,7 +27,7 @@ export default function WelcomePage() {
       <div className="w-full max-w-sm flex flex-col gap-4 mb-4">
         <Link
           href="/auth/sign-in"
-          className="block w-full text-center bg-white rounded-2xl py-4 font-bold text-[#68ac53] text-lg shadow-md hover:bg-white/90 transition-colors"
+          className="block w-full text-center bg-white rounded-2xl py-4 font-bold text-brand text-lg shadow-md hover:bg-white/90 transition-colors"
         >
           Sign In
         </Link>

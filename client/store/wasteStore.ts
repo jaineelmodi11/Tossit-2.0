@@ -3,7 +3,7 @@ import type { WasteTotals, UserWasteDocument } from "../types";
 
 interface WasteState {
   totals: WasteTotals;
-  linegraph: Record<string, WasteTotals>;
+  linegraph: Record<string, Partial<WasteTotals>>;
   setWasteData: (data: UserWasteDocument) => void;
 }
 

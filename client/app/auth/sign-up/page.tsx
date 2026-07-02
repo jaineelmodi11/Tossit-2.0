@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signUp } from "@/lib/firebase/auth";
 import { initUserDoc } from "@/lib/firebase/firestore";
+import { friendlyAuthError } from "@/lib/firebase/errors";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function SignUpPage() {
       await initUserDoc(user.uid);
       router.replace("/home");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
+      setError(friendlyAuthError(err, "Registration failed. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,7 @@ export default function SignUpPage() {
           ←
         </Link>
 
-        <h1 className="text-[#1E232C] text-4xl font-bold mb-2">Create account</h1>
+        <h1 className="text-ink text-4xl font-bold mb-2">Create account</h1>
         <p className="text-gray-400 text-base mb-10">
           Start reducing your waste footprint today.
         </p>
@@ -116,8 +117,7 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-2xl py-5 font-bold text-white text-lg transition-colors"
-            style={{ backgroundColor: loading ? "#a8d49a" : "#68ac53" }}
+            className="rounded-2xl py-5 font-bold text-white text-lg bg-brand hover:bg-brand-dark transition-colors disabled:opacity-60"
           >
             {loading ? "Creating account..." : "Create Account"}
           </button>
@@ -127,7 +127,7 @@ export default function SignUpPage() {
           <span className="text-gray-400 text-base">Already have an account?</span>
           <Link
             href="/auth/sign-in"
-            className="text-[#68ac53] font-semibold text-base hover:underline"
+            className="text-brand font-semibold text-base hover:underline"
           >
             Sign In
           </Link>

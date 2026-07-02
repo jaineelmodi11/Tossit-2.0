@@ -14,7 +14,7 @@ interface Props {
 }
 
 const COLORS = {
-  Recycling: "#ADD8E6",
+  Recycling: "#60A5FA",
   Organic: "#68ac53",
   Garbage: "#9CA3AF",
 };

@@ -39,30 +39,24 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto px-5 py-6 pb-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-[#1E232C] text-2xl font-bold">Profile</h1>
+          <h1 className="text-ink text-2xl font-bold">Profile</h1>
         </div>
 
         {/* Avatar + info */}
         <div className="bg-white rounded-3xl p-6 mb-5 flex flex-col items-center shadow-sm">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
-            style={{ backgroundColor: "#68ac53" }}
-          >
+          <div className="w-20 h-20 rounded-full bg-brand flex items-center justify-center mb-4">
             <span className="text-white text-3xl font-bold">
               {user?.email?.[0]?.toUpperCase() ?? "?"}
             </span>
           </div>
-          <p className="text-[#1E232C] font-bold text-lg">
+          <p className="text-ink font-bold text-lg">
             {user?.email?.split("@")[0] ?? "User"}
           </p>
           <p className="text-gray-400 text-sm mt-1">{user?.email}</p>
         </div>
 
         {/* Recycling rate */}
-        <div
-          className="rounded-3xl p-5 mb-5 shadow-sm"
-          style={{ backgroundColor: "#68ac53" }}
-        >
+        <div className="bg-brand rounded-3xl p-5 mb-5 shadow-sm">
           <p className="text-white/80 text-sm mb-1">Your Recycling Rate</p>
           <p className="text-white text-4xl font-bold">{recyclingRate}%</p>
           <p className="text-white/70 text-xs mt-1">
@@ -75,7 +69,7 @@ export default function ProfilePage() {
           {stats.map(({ label, value, emoji }) => (
             <div key={label} className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="text-2xl mb-1">{emoji}</div>
-              <div className="text-[#1E232C] text-2xl font-bold">{value}</div>
+              <div className="text-ink text-2xl font-bold">{value}</div>
               <div className="text-gray-400 text-xs mt-0.5 font-medium">{label}</div>
             </div>
           ))}
@@ -88,7 +82,7 @@ export default function ProfilePage() {
           </p>
           <div className="px-5 py-3 border-b border-gray-50">
             <p className="text-gray-400 text-xs">Signed in as</p>
-            <p className="text-[#1E232C] text-sm font-medium mt-0.5">{user?.email}</p>
+            <p className="text-ink text-sm font-medium mt-0.5">{user?.email}</p>
           </div>
           <button
             onClick={() => setShowConfirm(true)}
@@ -109,7 +103,7 @@ export default function ProfilePage() {
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="text-[#1E232C] text-lg font-bold mb-2">Sign Out</h3>
+            <h3 className="text-ink text-lg font-bold mb-2">Sign Out</h3>
             <p className="text-gray-400 text-sm mb-6">
               Are you sure you want to sign out?
             </p>
