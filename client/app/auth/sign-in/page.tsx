@@ -56,7 +56,7 @@ export default function SignInPage() {
       <div className="flex-1 overflow-y-auto px-6 pt-4 pb-8 max-w-lg mx-auto w-full">
         {/* Back */}
         <Link
-          href="/auth/welcome"
+          href="/"
           className="inline-flex items-center justify-center w-12 h-12 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors mt-4 mb-8"
         >
           ←

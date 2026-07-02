@@ -20,7 +20,7 @@ export default function ProfilePage() {
     setSigningOut(true);
     try {
       await signOutUser();
-      router.replace("/auth/welcome");
+      router.replace("/");
     } catch {
       setSigningOut(false);
       setShowConfirm(false);

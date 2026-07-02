@@ -113,6 +113,8 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+# Public URL of the deployed site - used for SEO (canonical links, sitemap, Open Graph)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ### 2. Firestore security rules
@@ -150,6 +152,16 @@ npm install
 npm run dev
 # open http://localhost:3000
 ```
+
+## 🌐 Going live & Google
+
+The app ships SEO-ready: a server-rendered landing page at `/`, `robots.txt` and `sitemap.xml` (generated from `app/robots.ts` / `app/sitemap.ts`), Open Graph + Twitter cards with a generated social image, and JSON-LD structured data. Private dashboard routes are excluded from crawling.
+
+To actually appear on Google:
+
+1. Deploy `client/` to a public host (Vercel is the path of least resistance for Next.js) and the FastAPI `server/` to something like Render, Railway, or Fly.io.
+2. Set the production env vars on the host: the Firebase keys, `NEXT_PUBLIC_API_URL` (your deployed API), and `NEXT_PUBLIC_SITE_URL` (your deployed domain). Add that domain to `ALLOWED_ORIGINS` in the server's `.env` and to Firebase Auth's authorized domains.
+3. In [Google Search Console](https://search.google.com/search-console), verify the domain and submit `https://your-domain/sitemap.xml`. Indexing typically starts within a few days.
 
 ## 🔮 Future
 
