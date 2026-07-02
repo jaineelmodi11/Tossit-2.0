@@ -49,7 +49,7 @@ Email and password. Nothing fancy, but your data is yours and stays private.
 |---|---|
 | Framework | Next.js 16 App Router |
 | Language | TypeScript |
-| Styling | Tailwind CSS + shadcn/ui |
+| Styling | Tailwind CSS v4 (design tokens in `globals.css`) |
 | Auth & DB | Firebase Auth + Firestore |
 | State | Zustand |
 | Charts | Recharts |
@@ -93,10 +93,10 @@ Email and password. Nothing fancy, but your data is yours and stays private.
 
 What actually happens when you scan something:
 
-1. You pick an image from your library or capture one with the camera
-2. `FileReader` converts it to base64 and it gets sent to `POST /predict`
-3. FastAPI runs the image through the ONNX model at 224x224 and returns `{ class: "Recycling" | "Organic" | "Garbage" }`
-4. `recordClassification` writes to three places in Firestore: the running totals, the daily linegraph, and the history subcollection
+1. You pick an image from your library or frame it in the live camera viewfinder
+2. The browser downscales it to max 512px JPEG (a multi-MB phone photo becomes ~50 KB) and sends it as base64 to `POST /predict`
+3. FastAPI runs the image through the ONNX model at 224x224 and returns `{ class: "Recycling" | "Organic" | "Garbage", confidence: 0.0-1.0 }`
+4. `recordClassification` commits one atomic batch to Firestore: the running totals (via `increment()`), the daily linegraph bucket (keyed `YYYY-MM-DD`), and a history entry
 5. The `onSnapshot` listeners on the dashboard pick up the changes and re-render without any manual refresh
 
 ## 🚀 Getting Started
@@ -115,7 +115,15 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
-### 2. ML model
+### 2. Firestore security rules
+
+Deploy the rules in `firestore.rules` so each user can only read and write their own data:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+### 3. ML model
 
 Drop `model.onnx` into the `server/` directory. If you only have the original `model.h5`, convert it:
 
@@ -128,7 +136,7 @@ The original training notebook and dataset:
 - Notebook: https://colab.research.google.com/drive/1lKhuDRrNifkCcQJYwR6jhOxjfU-8rV1z?usp=sharing
 - Dataset: https://www.kaggle.com/datasets/vyomkapadia/tossit
 
-### 3. Run
+### 4. Run
 
 ```bash
 # Terminal 1 - ML backend
