@@ -11,9 +11,9 @@ The classifier auto-detects which backend to use based on which model file exist
 
 from __future__ import annotations
 
-import io
 import os
 import logging
+
 import numpy as np
 from PIL import Image
 
@@ -28,6 +28,15 @@ def _preprocess(img: Image.Image) -> np.ndarray:
     img = img.resize(INPUT_SIZE).convert("RGB")
     arr = np.array(img, dtype=np.float32) / 255.0
     return np.expand_dims(arr, axis=0)  # (1, 224, 224, 3)
+
+
+def _to_probabilities(outputs: np.ndarray) -> np.ndarray:
+    """Returns a probability vector whether the head emits softmax or raw logits."""
+    vec = np.asarray(outputs, dtype=np.float64).reshape(-1)
+    if np.all(vec >= 0) and abs(vec.sum() - 1.0) < 1e-3:
+        return vec
+    e = np.exp(vec - vec.max())
+    return e / e.sum()
 
 
 class WasteClassifier:
@@ -55,11 +64,6 @@ class WasteClassifier:
                 import tensorflow as tf  # type: ignore
                 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
                 self._tf_model = tf.keras.models.load_model(tf_path)
-                self._tf_model.compile(
-                    optimizer="adam",
-                    loss="categorical_crossentropy",
-                    metrics=["accuracy"],
-                )
                 logger.info("TensorFlow model loaded successfully.")
                 return
             except ImportError:
@@ -70,16 +74,17 @@ class WasteClassifier:
             "Run 'python convert_model.py' to convert model.h5 to model.onnx."
         )
 
-    def predict(self, img: Image.Image) -> str:
+    def predict(self, img: Image.Image) -> tuple[str, float]:
+        """Returns (label, confidence) where confidence is the softmax probability."""
         tensor = _preprocess(img)
 
         if self._session is not None:
-            outputs = self._session.run(None, {self._input_name: tensor})
-            idx = int(np.argmax(outputs[0]))
+            outputs = self._session.run(None, {self._input_name: tensor})[0]
         elif self._tf_model is not None:
-            preds = self._tf_model.predict(tensor, verbose=0)
-            idx = int(np.argmax(preds))
+            outputs = self._tf_model.predict(tensor, verbose=0)
         else:
             raise RuntimeError("Classifier is not initialized.")
 
-        return CLASSES[idx]
+        probs = _to_probabilities(outputs)
+        idx = int(np.argmax(probs))
+        return CLASSES[idx], float(probs[idx])

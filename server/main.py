@@ -1,27 +1,24 @@
 """
 Tossit - Waste Classification API
-FastAPI 0.115 | Modernized from original FastAPI 0.68 version
 
-Key improvements over the original:
-- Model loads once at startup via lifespan, not at import time
+- Model loads once at startup via lifespan and lives on app.state
 - Images processed in-memory (io.BytesIO) - no disk writes
-- Proper HTTP 500 with error details instead of swallowing exceptions
-- Typed Pydantic request body
-- CORS origins configurable via environment variables
+- 400 for bad client input, 500 only for genuine server faults
+- Payload size cap on the base64 body
+- Returns the softmax confidence alongside the predicted class
 """
 
 from __future__ import annotations
 
 import io
 import logging
-import os
 from base64 import b64decode
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
-from pydantic import BaseModel
+from PIL import Image, UnidentifiedImageError
+from pydantic import BaseModel, Field
 
 from config import settings
 from model import WasteClassifier
@@ -29,33 +26,32 @@ from model import WasteClassifier
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-classifier: WasteClassifier | None = None
+# ~10 MB of image data once base64-decoded (base64 inflates by 4/3).
+MAX_DATA_URI_CHARS = 14_000_000
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global classifier
     logger.info("Loading waste classification model...")
-    classifier = WasteClassifier(
+    app.state.classifier = WasteClassifier(
         onnx_path=settings.onnx_model_path,
         tf_path=settings.tf_model_path,
     )
     logger.info("Model ready.")
     yield
-    classifier = None
+    app.state.classifier = None
     logger.info("Model unloaded.")
 
 
 app = FastAPI(
     title="Tossit Classification API",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
-    allow_credentials=True,
     allow_methods=["POST", "GET"],
     allow_headers=["Content-Type"],
 )
@@ -63,35 +59,49 @@ app.add_middleware(
 
 class PredictRequest(BaseModel):
     # Expects: "data:image/jpeg;base64,<payload>"
-    data: str
+    data: str = Field(max_length=MAX_DATA_URI_CHARS)
+
+
+class PredictResponse(BaseModel):
+    class_: str = Field(serialization_alias="class")
+    confidence: float
 
 
 @app.get("/health")
-async def health():
+async def health(request: Request):
+    classifier = getattr(request.app.state, "classifier", None)
     return {"status": "ok", "model_loaded": classifier is not None}
 
 
-@app.post("/predict")
-async def predict(body: PredictRequest):
+@app.post("/predict", response_model=PredictResponse)
+async def predict(body: PredictRequest, request: Request):
+    classifier: WasteClassifier | None = getattr(request.app.state, "classifier", None)
     if classifier is None:
         raise HTTPException(status_code=503, detail="Model not loaded yet.")
 
+    # Strip "data:image/...;base64," prefix
+    if "," not in body.data:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid data URI format - expected 'data:<mime>;base64,<payload>'.",
+        )
+
+    _, b64_payload = body.data.split(",", 1)
     try:
-        # Strip "data:image/...;base64," prefix
-        if "," not in body.data:
-            raise ValueError("Invalid data URI format - expected 'data:<mime>;base64,<payload>'")
-
-        _, b64_payload = body.data.split(",", 1)
-        image_bytes = b64decode(b64_payload)
-
+        image_bytes = b64decode(b64_payload, validate=True)
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        label = classifier.predict(img)
+    except (ValueError, UnidentifiedImageError):
+        raise HTTPException(
+            status_code=400, detail="Could not decode the image. Try another photo."
+        )
 
-        return {"class": label}
-
-    except (ValueError, Exception) as exc:
+    try:
+        label, confidence = classifier.predict(img)
+    except Exception:
         logger.exception("Prediction failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Model inference failed.")
+
+    return PredictResponse(class_=label, confidence=round(confidence, 4))
 
 
 if __name__ == "__main__":
