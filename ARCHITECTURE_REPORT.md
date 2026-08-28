@@ -1,7 +1,7 @@
-# TossIt 2.0 — System Architecture Report
+# TossIt 2.0 - System Architecture Report
 
 **Audit date:** July 2026 · **Auditor:** Principal-architect review (Claude)
-**Scope:** full repo — `client/` (Next.js web app) and `server/` (FastAPI ML backend)
+**Scope:** full repo - `client/` (Next.js web app) and `server/` (FastAPI ML backend)
 
 ---
 
@@ -24,7 +24,7 @@
 | # | Flaw | Where | Impact |
 |---|------|-------|--------|
 | B1 | **Invalid CORS configuration.** `allow_origins=["*", …]` combined with `allow_credentials=True` is contradictory (the spec forbids wildcard + credentials; Starlette quietly degrades) and `"*"` as a *default* is wide open. | `server/config.py` / `main.py` | Any website can call the API in the default config. |
-| B2 | **Every error is HTTP 500.** `except (ValueError, Exception)` (a redundant tuple) turns bad client input — malformed data URI, corrupt image — into a server error, and leaks internal exception text to the client. | `server/main.py` | Wrong semantics; no way for the client to distinguish "your image is bad" from "server broke". |
+| B2 | **Every error is HTTP 500.** `except (ValueError, Exception)` (a redundant tuple) turns bad client input - malformed data URI, corrupt image - into a server error, and leaks internal exception text to the client. | `server/main.py` | Wrong semantics; no way for the client to distinguish "your image is bad" from "server broke". |
 | B3 | **No payload bound.** The predict endpoint accepts arbitrarily large base64 bodies. | `server/main.py` | Trivial memory-exhaustion vector. |
 | B4 | **Model output treated as argmax-only.** The softmax confidence is computed and discarded; the UI can never say "87% sure". | `server/model.py` | Lost product value for free. |
 | B5 | **Deprecated pydantic-settings v1 style.** `class Config:` inner class instead of `model_config = SettingsConfigDict(...)`. | `server/config.py` | Deprecation warnings; will break on pydantic v3. |
@@ -32,7 +32,7 @@
 
 ### 1.3 Technical debt & repo hygiene
 
-- **Dead UI kit.** `components/ui/` (avatar, badge, button, card, dialog, input, label), `components.json`, and `lib/utils.ts` are imported by **zero** application files. They drag in five unused dependencies: `@base-ui/react`, `class-variance-authority`, `clsx`, `lucide-react`, `shadcn` (a CLI, wrongly a runtime dep), `tailwind-merge`, `tw-animate-css`. ~90 % of `globals.css` is shadcn token plumbing no page reads. Meanwhile the profile page *hand-rolls* a modal instead of using the dialog component that ships in the repo — the worst of both worlds.
+- **Dead UI kit.** `components/ui/` (avatar, badge, button, card, dialog, input, label), `components.json`, and `lib/utils.ts` are imported by **zero** application files. They drag in five unused dependencies: `@base-ui/react`, `class-variance-authority`, `clsx`, `lucide-react`, `shadcn` (a CLI, wrongly a runtime dep), `tailwind-merge`, `tw-animate-css`. ~90 % of `globals.css` is shadcn token plumbing no page reads. Meanwhile the profile page *hand-rolls* a modal instead of using the dialog component that ships in the repo - the worst of both worlds.
 - **React-Native fossils tracked in git:** `server/.expo/`, `server/image.png`.
 - **Triplicated `CATEGORY_CONFIG`.** Home, Scan, and History each define their own copy with drifting labels (`"Organic"` vs `"Organic / Compost"`) and colors.
 - **Brand color scattered as magic hex.** `#68ac53` appears as inline `style=` and arbitrary `text-[#68ac53]` classes across 8 files; `globals.css` even defines `.bg-brand-green` utilities that nothing uses. No single source of truth for the design system.
@@ -42,17 +42,17 @@
 ### 1.4 UX / UI friction
 
 - **Raw Firebase errors shown to users:** `"Firebase: Error (auth/invalid-credential)."` on a failed login.
-- **No password-reset path.** A forgotten password is a dead end; the sign-in page even renders an "— or —" divider with nothing under it (a dangling affordance).
-- **No camera viewfinder** (see F3) — users shoot blind.
+- **No password-reset path.** A forgotten password is a dead end; the sign-in page even renders an "- or -" divider with nothing under it (a dangling affordance).
+- **No camera viewfinder** (see F3) - users shoot blind.
 - **Multi-megapixel uploads.** A 12 MP phone photo (~4 MB → ~5.3 MB as base64) is shipped to a model that consumes 224×224 px. Classification latency is dominated by upload time.
-- **No confidence shown** — the result card asserts certainty the model doesn't have.
+- **No confidence shown** - the result card asserts certainty the model doesn't have.
 
 ## 2. Modernization Strategy
 
-The stack itself (Next.js 16 App Router, React 19, Tailwind 4, Zustand, FastAPI, ONNX Runtime) is current and well-chosen — **no framework migration is warranted**. The modernization is surgical:
+The stack itself (Next.js 16 App Router, React 19, Tailwind 4, Zustand, FastAPI, ONNX Runtime) is current and well-chosen - **no framework migration is warranted**. The modernization is surgical:
 
 1. **Data layer:** canonical `YYYY-MM-DD` (local) date keys with a read-time fallback for legacy US-locale keys; single atomic `writeBatch` + `increment()` for scan recording (1 round-trip, race-free, no pre-read).
-2. **Perf:** client-side image downscale (max 512 px JPEG) before upload — typically a 10–30× payload reduction; request timeout via `AbortSignal.timeout`.
+2. **Perf:** client-side image downscale (max 512 px JPEG) before upload - typically a 10–30× payload reduction; request timeout via `AbortSignal.timeout`.
 3. **Camera:** a real `CameraCapture` viewfinder component (live `<video>` preview, capture button, proper frame-readiness wait, track cleanup).
 4. **API:** `/predict` returns `{class, confidence}`; 400 vs 500 error semantics; payload size cap; locked-down CORS defaults; pydantic-settings v2 idiom; latest stable pins.
 5. **Design system:** brand tokens (`--color-brand`, `--color-ink`, …) in the Tailwind 4 `@theme`, replacing every magic hex; one shared `CATEGORY_CONFIG`.
@@ -69,7 +69,7 @@ Welcome ──► Sign In ──► Dashboard (/home) ◄──── live onSna
 
 | Flow | Friction found | Fix |
 |------|----------------|-----|
-| **First launch → Welcome** | OK — clear CTA pair. | — |
+| **First launch → Welcome** | OK - clear CTA pair. | - |
 | **Sign in** | Raw Firebase error strings; no way to recover a forgotten password; dead "or" divider implies a social login that doesn't exist. | Error mapping, "Forgot password?" reset flow, divider removed. |
 | **Sign up** | Client validates 6-char minimum but server-side errors again surface raw. | Same error mapping. |
 | **Scan (camera)** | Tap "Take Photo" → nothing visible happens → maybe a black photo appears. User cannot aim. | Live viewfinder modal with an explicit shutter button. |
@@ -77,7 +77,7 @@ Welcome ──► Sign In ──► Dashboard (/home) ◄──── live onSna
 | **Scan result** | "Saved to your dashboard" even when the save failed. No confidence signal. | Honest save state (`Saved` / `Couldn't save`), confidence percentage. |
 | **Dashboard** | Charts silently empty for non-US users (F1) or on rule denials (F6). | ISO keys + legacy fallback; error banners. |
 | **History** | Infinite skeleton on error; otherwise solid. | Error state added. |
-| **Profile → Sign out** | Hand-rolled modal is fine; kept, simplified with brand tokens. | — |
+| **Profile → Sign out** | Hand-rolled modal is fine; kept, simplified with brand tokens. | - |
 
 ## 4. Verification
 
