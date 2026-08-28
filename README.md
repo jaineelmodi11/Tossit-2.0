@@ -34,6 +34,50 @@ Each scan writes an individual timestamped record to Firestore. The history page
 **Firebase Auth**
 Email and password. Nothing fancy, but your data is yours and stays private.
 
+## 📊 How accurate is the model, really
+
+The training accuracy was measured on a held-out split of the model's own
+dataset. [`server/benchmark.py`](server/benchmark.py) asks a harder question:
+how does it do on photographs it has never seen, from
+[TrashNet](https://huggingface.co/datasets/kuchidareo/small_trashnet).
+
+<p align="center">
+  <img src="docs/benchmark.svg" alt="Benchmark of the waste classifier against real TrashNet photographs" width="720">
+</p>
+
+TrashNet labels six materials. Five belong in recycling and one is general
+waste, so they map onto two of the three classes here. TrashNet has no organic
+category, so Organic is not measured.
+
+| TrashNet class | Should be | Correct |
+| :--- | :--- | ---: |
+| cardboard | Recycling | 20/30 |
+| glass | Recycling | 21/30 |
+| metal | Recycling | 16/30 |
+| paper | Recycling | 19/30 |
+| plastic | Recycling | 22/30 |
+| trash | Garbage | 4/30 |
+| **overall** | | **102/180 = 56.7%** |
+
+**Answering "Recycling" every single time would score 83.3%.** The model is
+below that, so on photographs outside its training set it is not yet adding
+information. It also answered Organic 19 times against a dataset that contains
+no organic waste.
+
+Two things worth fixing before this is useful in the wild: the training set is
+small and narrow compared to what a phone camera actually sees, and the classes
+are unbalanced enough that the model has learned to lean on Recycling. Neither
+is unusual for a hackathon model. Both are measurable now, which is the point
+of adding the benchmark.
+
+```bash
+cd server
+pip install datasets onnxruntime pillow numpy
+python benchmark.py
+```
+
+---
+
 ## 🧰 Tech Stack
 
 ![Next.js](https://img.shields.io/badge/Next.js_16-black?style=flat&logo=next.js)
